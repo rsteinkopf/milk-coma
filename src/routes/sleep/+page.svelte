@@ -84,7 +84,7 @@
       <li>
         {#if editingId === e.id}
           <div class="edit-form">
-            <div class="edit-row">
+            <div class="edit-row stack">
               <label>
                 Start
                 <input type="datetime-local" bind:value={editStart} />

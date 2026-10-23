@@ -143,8 +143,8 @@
       <span class="card-value"
         >{fmtDuration(lastSleep.start_time, lastSleep.end_time)}</span
       >
-      <span class="card-sub">last sleep at {fmtTime(lastSleep.start_time)}</span
-      >
+      <span class="card-sub">awoke at {fmtTime(lastSleep.end_time)}</span>
+      <span class="card-sub">started at {fmtTime(lastSleep.start_time)}</span>
     {:else}
       <span class="card-value">None yet</span>
     {/if}
