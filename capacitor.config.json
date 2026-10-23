@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.babytracker",
+  "appName": "Milk Coma",
+  "webDir": "build",
+  "bundledWebRuntime": false
+}

@@ -1,0 +1,32 @@
+{
+  "name": "baby-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "cap:assets": "capacitor-assets generate --android --assetPath assets",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
+    "build:apk": "npm run build && npx cap sync android && cd android && unset ANDROID_PREFS_ROOT && ./gradlew assembleDebug",
+    "build:apk:release": "npm run build && npx cap sync android && cd android && unset ANDROID_PREFS_ROOT && ./gradlew assembleRelease"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/vite-plugin-svelte": "^5.1.1",
+    "svelte": "^5.57.1",
+    "@sveltejs/kit": "^2.70.3",
+    "vite": "^6.4.3"
+  },
+  "dependencies": {
+    "@fontsource/bungee": "^5.0.0",
+    "@fontsource/outfit": "^5.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "idb": "^8.0.0"
+  }
+}
