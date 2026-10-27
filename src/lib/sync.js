@@ -36,6 +36,7 @@ export async function pushLocalChanges() {
 			household_id: get(household)?.id ?? entry.household_id ?? null,
 			type: entry.type,
 			feed_type: entry.feed_type ?? null,
+			sleep_type: entry.sleep_type ?? null,
 			start_time: entry.start_time,
 			end_time: entry.end_time,
 			left_seconds: entry.left_seconds ?? null,

@@ -167,8 +167,14 @@ export function fmtSeconds(totalSeconds) {
 	return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 }
 
-export async function startSleep() {
-	await addEntry({ type: 'sleep', start_time: new Date().toISOString(), end_time: null, notes: '' });
+export async function startSleep(sleepType = 'night') {
+	await addEntry({
+		type: 'sleep',
+		sleep_type: sleepType,
+		start_time: new Date().toISOString(),
+		end_time: null,
+		notes: ''
+	});
 	await refresh();
 	syncNow();
 }

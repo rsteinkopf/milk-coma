@@ -22,6 +22,14 @@
   let editingId = null;
   let editStart = "";
   let editEnd = "";
+  let editKind = "night";
+
+  // Default to nap during the day and night sleep otherwise; flip it with the toggle
+  const defaultKind = () => {
+    const h = new Date().getHours();
+    return h >= 7 && h < 19 ? "nap" : "night";
+  };
+  let sleepKind = defaultKind();
 
   onMount(() => {
     tick = setInterval(() => (now = new Date()), 1000);
@@ -31,6 +39,9 @@
   $: sleepHistory = $entries.filter((e) => e.type === "sleep" && e.end_time);
   let visibleCount = 10;
   $: visibleSleeps = sleepHistory.slice(0, visibleCount);
+  $: shownKind = $activeSleep
+    ? ($activeSleep.sleep_type ?? "night")
+    : sleepKind;
   $: elapsed = $activeSleep
     ? fmtDuration($activeSleep.start_time, now.toISOString())
     : null;
@@ -39,6 +50,7 @@
     editingId = e.id;
     editStart = toDatetimeLocal(e.start_time);
     editEnd = toDatetimeLocal(e.end_time);
+    editKind = e.sleep_type ?? "night";
   }
 
   function cancelEdit() {
@@ -49,6 +61,7 @@
     editEntry(e.id, {
       start_time: fromDatetimeLocal(editStart),
       end_time: fromDatetimeLocal(editEnd),
+      sleep_type: editKind,
     });
     editingId = null;
   }
@@ -62,10 +75,16 @@
 </script>
 
 <section class="timer">
-  <Emblem size={190} a="var(--cyan)" b="var(--violet)" spin={!!$activeSleep}>
+  <Emblem
+    size={190}
+    a={shownKind === "nap" ? "var(--sun)" : "var(--cyan)"}
+    b={shownKind === "nap" ? "var(--orange)" : "var(--violet)"}
+    spin={!!$activeSleep}
+  >
     {#if $activeSleep}<span class="emb-num"><Duration text={elapsed} /></span
-      ><span class="emb-cap">asleep</span>{:else}<Icon
-        name="moon"
+      ><span class="emb-cap">{shownKind === "nap" ? "napping" : "asleep"}</span
+      >{:else}<Icon
+        name={shownKind === "nap" ? "sun" : "moon"}
         size={44}
       />{/if}
   </Emblem>
@@ -73,7 +92,26 @@
     <p class="since">started {fmtTime($activeSleep.start_time)}</p>
     <button class="stop" on:click={stopSleep}>Stop sleep</button>
   {:else}
-    <button class="start" on:click={startSleep}>Start sleep</button>
+    <div class="seg" role="group" aria-label="Sleep type">
+      <button
+        class="nap"
+        aria-pressed={sleepKind === "nap"}
+        on:click={() => (sleepKind = "nap")}
+        ><Icon name="sun" size={20} /> Day</button
+      >
+      <button
+        class="night"
+        aria-pressed={sleepKind === "night"}
+        on:click={() => (sleepKind = "night")}
+        ><Icon name="moon" size={20} /> Night</button
+      >
+    </div>
+    <button
+      class="start {sleepKind === 'nap' ? 'nap' : ''}"
+      on:click={() => startSleep(sleepKind)}
+    >
+      Start {sleepKind === "nap" ? "nap" : "sleep"}
+    </button>
   {/if}
 </section>
 
@@ -84,6 +122,20 @@
       <li>
         {#if editingId === e.id}
           <div class="edit-form">
+            <div class="seg" role="group" aria-label="Sleep type">
+              <button
+                class="nap"
+                aria-pressed={editKind === "nap"}
+                on:click={() => (editKind = "nap")}
+                ><Icon name="sun" size={20} /> Nap</button
+              >
+              <button
+                class="night"
+                aria-pressed={editKind === "night"}
+                on:click={() => (editKind = "night")}
+                ><Icon name="moon" size={20} /> Night</button
+              >
+            </div>
             <div class="edit-row stack">
               <label>
                 Start
@@ -104,7 +156,12 @@
           </div>
         {:else}
           <button class="entry-row" on:click={() => startEdit(e)}>
-            <span class="badge b-moon"><Icon name="moon" size={18} /></span>
+            <span class="badge {e.sleep_type === 'nap' ? 'b-sun' : 'b-moon'}"
+              ><Icon
+                name={e.sleep_type === "nap" ? "sun" : "moon"}
+                size={18}
+              /></span
+            >
             <span class="entry-main">
               <span class="entry-date">{fmtDate(e.start_time)}</span>
               <span class="entry-time"

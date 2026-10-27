@@ -26,6 +26,28 @@
     0,
   );
 
+  // Wake window = gap between the end of one sleep and the start of the next.
+  // Counts gaps that finished today (including the one after overnight sleep).
+  $: wakeGaps = (() => {
+    const sleeps = $entries
+      .filter((e) => e.type === "sleep")
+      .slice()
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+    const gaps = [];
+    for (let i = 1; i < sleeps.length; i++) {
+      const prev = sleeps[i - 1];
+      const next = sleeps[i];
+      if (prev.end_time && isToday(next.start_time)) {
+        const gap = new Date(next.start_time) - new Date(prev.end_time);
+        if (gap > 0) gaps.push(gap);
+      }
+    }
+    return gaps;
+  })();
+  $: avgWakeMinutes = wakeGaps.length
+    ? Math.round(wakeGaps.reduce((a, b) => a + b, 0) / wakeGaps.length / 60000)
+    : null;
+
   $: todaysBreast = todaysFeedings.filter((e) => e.feed_type === "breast");
   $: leftSecondsToday = todaysBreast.reduce(
     (sum, e) => sum + (e.left_seconds || 0),
@@ -33,7 +55,6 @@
   );
   $: rightSecondsToday = todaysBreast.reduce(
     (sum, e) => sum + (e.right_seconds || 0),
-    0,
     0,
   );
 
@@ -168,6 +189,11 @@
       <li><strong>{totalBottleOzToday} oz</strong> total bottles</li>
     {/if}
     <li><strong>{fmtMinutes(totalSleepMinutesToday)}</strong> total sleep</li>
+    <li>
+      <strong
+        >{avgWakeMinutes === null ? "—" : fmtMinutes(avgWakeMinutes)}</strong
+      > avg wake window
+    </li>
   </ul>
 </section>
 

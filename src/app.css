@@ -147,3 +147,10 @@ input:focus { outline: 0; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(
 .edit-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .edit-row.stack { grid-template-columns: minmax(0, 1fr); }
 .edit-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* nap / night toggle */
+.seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin: 1rem 0 .25rem; }
+.seg button { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 0 .5rem; border: 2px solid #3b2a80; border-radius: 2px; background: var(--void); color: var(--dim); font: 800 .95rem var(--body); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.seg button.nap[aria-pressed=true] { border-color: var(--sun); color: var(--sun); box-shadow: 0 0 12px rgba(255,210,63,.45); }
+.seg button.night[aria-pressed=true] { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 12px rgba(25,240,255,.45); }
+.start.nap { --b1: var(--sun); --b2: var(--orange); }
