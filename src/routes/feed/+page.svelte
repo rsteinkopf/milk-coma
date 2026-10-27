@@ -117,6 +117,18 @@
 
   $: bottleAmountValid = parseFloat(bottleAmount) > 0;
 
+  function cancelFeed() {
+    if (!$activeFeeding) return;
+    if (
+      confirm(
+        "Cancel this feed? The timer and anything entered will be discarded.",
+      )
+    ) {
+      deleteEntry($activeFeeding.id);
+      bottleAmount = "";
+    }
+  }
+
   function finishBottle() {
     const amount = parseFloat(bottleAmount);
     if (!amount || amount <= 0) return;
@@ -178,6 +190,7 @@
       </div>
     {/if}
     <button class="stop" on:click={stopBreastFeeding}>Done feeding</button>
+    <button class="delete" on:click={cancelFeed}>Cancel feed</button>
   </section>
 {:else if $activeFeeding?.feed_type === "bottle"}
   <section class="timer bottle-active">
@@ -218,6 +231,7 @@
     {#if !bottleAmountValid}
       <p class="hint">Enter the amount consumed to finish.</p>
     {/if}
+    <button class="delete" on:click={cancelFeed}>Cancel feed</button>
   </section>
 {:else if !$activeFeeding}
   <section class="choose-type">
@@ -310,8 +324,7 @@
             <span class="entry-main">
               <span class="entry-date">{fmtDate(e.start_time)}</span>
               <span class="entry-time"
-                >{fmtTime(e.start_time)}
-                {#if e.feed_type !== "bottle"}
+                >{fmtTime(e.start_time)}{#if e.feed_type !== "bottle"}
                   to {fmtTime(e.end_time)}{/if}</span
               >
               <span class="chips">

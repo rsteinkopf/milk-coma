@@ -66,6 +66,13 @@
     editingId = null;
   }
 
+  function cancelSleep() {
+    if (!$activeSleep) return;
+    if (confirm("Cancel this sleep? The timer will be discarded.")) {
+      deleteEntry($activeSleep.id);
+    }
+  }
+
   function removeEntry(id) {
     if (confirm("Delete this entry? This can't be undone.")) {
       deleteEntry(id);
@@ -91,6 +98,7 @@
   {#if $activeSleep}
     <p class="since">started {fmtTime($activeSleep.start_time)}</p>
     <button class="stop" on:click={stopSleep}>Stop sleep</button>
+    <button class="delete" on:click={cancelSleep}>Cancel sleep</button>
   {:else}
     <div class="seg" role="group" aria-label="Sleep type">
       <button
