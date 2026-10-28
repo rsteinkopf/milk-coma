@@ -40,3 +40,9 @@ create policy "Users can update their own entries"
 
 -- Enable realtime for live sync across devices.
 alter publication supabase_realtime add table entries;
+
+alter table entries add column sleep_type text check (sleep_type in ('nap', 'night'));
+
+alter table entries add column bottle_content text check (bottle_content in ('breast_milk', 'formula', 'combo'));
+alter table entries add column breast_milk_oz numeric;
+alter table entries add column formula_oz numeric;

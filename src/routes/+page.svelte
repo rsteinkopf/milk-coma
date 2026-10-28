@@ -58,9 +58,15 @@
     0,
   );
 
-  $: totalBottleOzToday = todaysFeedings
-    .filter((e) => e.feed_type === "bottle")
-    .reduce((sum, e) => sum + (e.amount_oz || 0), 0);
+  $: todaysBottles = todaysFeedings.filter((e) => e.feed_type === "bottle");
+  const sumOz = (list, key) =>
+    +list.reduce((sum, e) => sum + (e[key] || 0), 0).toFixed(1);
+  $: breastMilkOzToday = sumOz(todaysBottles, "breast_milk_oz");
+  $: formulaOzToday = sumOz(todaysBottles, "formula_oz");
+  $: untypedOzToday = sumOz(
+    todaysBottles.filter((e) => !e.bottle_content),
+    "amount_oz",
+  );
 
   function fmtMinutes(mins) {
     const h = Math.floor(mins / 60);
@@ -185,15 +191,22 @@
         >{fmtMinutes(Math.round(rightSecondsToday / 60))}</strong
       > right side
     </li>
-    {#if totalBottleOzToday > 0}
-      <li><strong>{totalBottleOzToday} oz</strong> total bottles</li>
-    {/if}
     <li><strong>{fmtMinutes(totalSleepMinutesToday)}</strong> total sleep</li>
     <li>
       <strong
         >{avgWakeMinutes === null ? "—" : fmtMinutes(avgWakeMinutes)}</strong
       > avg wake window
     </li>
+    {#if breastMilkOzToday > 0}<li>
+        <strong style="color: var(--lime)">{breastMilkOzToday}</strong> oz breast
+        milk
+      </li>{/if}
+    {#if formulaOzToday > 0}<li>
+        <strong style="color: var(--orange)">{formulaOzToday}</strong> oz formula
+      </li>{/if}
+    {#if untypedOzToday > 0}<li>
+        <strong>{untypedOzToday}</strong> oz bottle
+      </li>{/if}
   </ul>
 </section>
 

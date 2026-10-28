@@ -154,3 +154,10 @@ input:focus { outline: 0; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(
 .seg button.nap[aria-pressed=true] { border-color: var(--sun); color: var(--sun); box-shadow: 0 0 12px rgba(255,210,63,.45); }
 .seg button.night[aria-pressed=true] { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 12px rgba(25,240,255,.45); }
 .start.nap { --b1: var(--sun); --b2: var(--orange); }
+
+/* bottle contents */
+.seg.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.seg.three button { font-size: .8rem; line-height: 1.1; text-align: center; }
+.seg.three button[aria-pressed=true] { border-color: var(--sun); color: var(--sun); box-shadow: 0 0 12px rgba(255,210,63,.45); }
+.chip.bm { background: var(--lime); }
+.chip.fm { background: var(--orange); }

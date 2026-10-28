@@ -14,6 +14,8 @@
     pauseBottleFeeding,
     resumeBottleFeeding,
     stopBottleFeeding,
+    bottleAmounts,
+    bottleInputsValid,
     getLastBreastSide,
     deleteEntry,
     editEntry,
@@ -28,7 +30,9 @@
   let editStart = "";
   let editLeftMin = 0;
   let editRightMin = 0;
-  let editOz = "";
+  let editContent = "breast_milk";
+  let editBm = "";
+  let editFm = "";
   let editBottleMin = 0;
 
   function startEdit(e) {
@@ -38,7 +42,11 @@
       editLeftMin = +((e.left_seconds || 0) / 60).toFixed(2);
       editRightMin = +((e.right_seconds || 0) / 60).toFixed(2);
     } else {
-      editOz = e.amount_oz ?? "";
+      editContent = e.bottle_content ?? "breast_milk";
+      editBm = e.bottle_content
+        ? (e.breast_milk_oz ?? "")
+        : (e.amount_oz ?? "");
+      editFm = e.formula_oz ?? "";
       editBottleMin = +((e.bottle_elapsed_seconds || 0) / 60).toFixed(2);
     }
   }
@@ -56,9 +64,13 @@
         right_seconds: Math.round(editRightMin * 60),
       });
     } else {
+      const a = bottleAmounts(editContent, editBm, editFm);
       editEntry(e.id, {
         start_time,
-        amount_oz: parseFloat(editOz) || 0,
+        bottle_content: editContent,
+        breast_milk_oz: a.breastMilkOz,
+        formula_oz: a.formulaOz,
+        amount_oz: Math.round((a.breastMilkOz + a.formulaOz) * 100) / 100,
         bottle_elapsed_seconds: Math.round(editBottleMin * 60),
       });
     }
@@ -74,7 +86,9 @@
 
   let now = new Date();
   let tick;
-  let bottleAmount = "";
+  let bottleContentChoice = null; // null = same contents as the last bottle
+  let bmOz = "";
+  let fmOz = "";
 
   onMount(() => {
     tick = setInterval(() => (now = new Date()), 1000);
@@ -115,7 +129,18 @@
       ? ($activeFeeding.bottle_elapsed_seconds || 0) + bottleLiveRunningSeconds
       : 0;
 
-  $: bottleAmountValid = parseFloat(bottleAmount) > 0;
+  $: lastBottle = $entries.find(
+    (e) => e.type === "feeding" && e.feed_type === "bottle" && e.bottle_content,
+  );
+  $: bottleContent =
+    bottleContentChoice ?? lastBottle?.bottle_content ?? "breast_milk";
+  $: bottleAmountValid = bottleInputsValid(bottleContent, bmOz, fmOz);
+
+  function resetBottle() {
+    bmOz = "";
+    fmOz = "";
+    bottleContentChoice = null;
+  }
 
   function cancelFeed() {
     if (!$activeFeeding) return;
@@ -125,23 +150,25 @@
       )
     ) {
       deleteEntry($activeFeeding.id);
-      bottleAmount = "";
+      resetBottle();
     }
   }
 
   function finishBottle() {
-    const amount = parseFloat(bottleAmount);
-    if (!amount || amount <= 0) return;
-    stopBottleFeeding(amount);
-    bottleAmount = "";
+    if (!bottleAmountValid) return;
+    stopBottleFeeding({
+      content: bottleContent,
+      ...bottleAmounts(bottleContent, bmOz, fmOz),
+    });
+    resetBottle();
   }
 </script>
 
-{#if lastSide}
+<!--{#if lastSide}
   <h1>
     Last side used: <strong>{lastSide === "left" ? "Left" : "Right"}</strong>
   </h1>
-{/if}
+{/if} -->
 
 {#if $activeFeeding?.feed_type === "breast"}
   <section class="timer breast-active">
@@ -217,19 +244,52 @@
       >
     {/if}
 
-    <input
-      class="oz-input"
-      type="number"
-      min="0"
-      step="0.5"
-      bind:value={bottleAmount}
-      placeholder="Amount consumed (oz)"
-    />
+    <div class="seg three" role="group" aria-label="Bottle contents">
+      <button
+        aria-pressed={bottleContent === "breast_milk"}
+        on:click={() => (bottleContentChoice = "breast_milk")}
+        >Breast milk</button
+      >
+      <button
+        aria-pressed={bottleContent === "formula"}
+        on:click={() => (bottleContentChoice = "formula")}>Formula</button
+      >
+      <button
+        aria-pressed={bottleContent === "combo"}
+        on:click={() => (bottleContentChoice = "combo")}>Combo</button
+      >
+    </div>
+    {#if bottleContent !== "formula"}
+      <input
+        class="oz-input"
+        type="number"
+        min="0"
+        step="0.5"
+        bind:value={bmOz}
+        placeholder="Breast milk (oz)"
+        aria-label="Breast milk in ounces"
+      />
+    {/if}
+    {#if bottleContent !== "breast_milk"}
+      <input
+        class="oz-input"
+        type="number"
+        min="0"
+        step="0.5"
+        bind:value={fmOz}
+        placeholder="Formula (oz)"
+        aria-label="Formula in ounces"
+      />
+    {/if}
     <button class="stop" on:click={finishBottle} disabled={!bottleAmountValid}
       >Done feeding</button
     >
     {#if !bottleAmountValid}
-      <p class="hint">Enter the amount consumed to finish.</p>
+      <p class="hint">
+        {bottleContent === "combo"
+          ? "Enter both amounts to finish."
+          : "Enter the amount consumed to finish."}
+      </p>
     {/if}
     <button class="delete" on:click={cancelFeed}>Cancel feed</button>
   </section>
@@ -237,6 +297,16 @@
   <section class="choose-type">
     <div class="type-block">
       <h2>Breastfeed</h2>
+      {#if lastSide}
+        <span class="card-sub"
+          >last side: <span
+            class="card-value"
+            style="color: var({lastSide === 'left' ? '--magenta' : '--cyan'})"
+          >
+            {lastSide === "left" ? "Left" : "Right"}
+          </span>
+        </span>
+      {/if}
       <div class="side-buttons">
         <button class="start left" on:click={() => startBreastFeeding("left")}
           >Start left</button
@@ -289,21 +359,42 @@
                 </label>
               </div>
             {:else}
-              <div class="edit-row">
-                <label>
-                  Amount (oz)
-                  <input type="number" min="0" step="0.5" bind:value={editOz} />
-                </label>
-                <label>
-                  Duration (min)
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    bind:value={editBottleMin}
-                  />
-                </label>
+              <div class="seg three" role="group" aria-label="Bottle contents">
+                <button
+                  aria-pressed={editContent === "breast_milk"}
+                  on:click={() => (editContent = "breast_milk")}
+                  >Breast milk</button
+                >
+                <button
+                  aria-pressed={editContent === "formula"}
+                  on:click={() => (editContent = "formula")}>Formula</button
+                >
+                <button
+                  aria-pressed={editContent === "combo"}
+                  on:click={() => (editContent = "combo")}>Combo</button
+                >
               </div>
+              {#if editContent !== "formula"}
+                <label>
+                  Breast milk (oz)
+                  <input type="number" min="0" step="0.5" bind:value={editBm} />
+                </label>
+              {/if}
+              {#if editContent !== "breast_milk"}
+                <label>
+                  Formula (oz)
+                  <input type="number" min="0" step="0.5" bind:value={editFm} />
+                </label>
+              {/if}
+              <label>
+                Duration (min)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  bind:value={editBottleMin}
+                />
+              </label>
             {/if}
             <div class="edit-actions">
               <button class="save" on:click={() => saveEdit(e)}>Save</button>
@@ -329,8 +420,20 @@
               >
               <span class="chips">
                 {#if e.feed_type === "bottle"}
-                  <span class="chip oz">{e.amount_oz} oz</span><span
-                    class="chip dur"
+                  {#if e.bottle_content === "combo"}
+                    <span class="chip bm">{e.breast_milk_oz} oz milk</span><span
+                      class="chip fm">{e.formula_oz} oz formula</span
+                    >
+                  {:else if e.bottle_content === "formula"}
+                    <span class="chip fm">{e.formula_oz} oz formula</span>
+                  {:else if e.bottle_content === "breast_milk"}
+                    <span class="chip bm"
+                      >{e.breast_milk_oz} oz breast milk</span
+                    >
+                  {:else}
+                    <span class="chip oz">{e.amount_oz} oz</span>
+                  {/if}
+                  <span class="chip dur"
                     >{fmtSeconds(e.bottle_elapsed_seconds || 0)}</span
                   >
                 {:else}

@@ -131,24 +131,42 @@ export async function resumeBottleFeeding() {
 	syncNow();
 }
 
-export async function stopBottleFeeding(amountOz) {
+export async function stopBottleFeeding({ content, breastMilkOz = 0, formulaOz = 0 }) {
 	const active = get(activeFeeding);
 	if (!active || active.feed_type !== 'bottle') return;
-	if (!amountOz || amountOz <= 0) return; // oz required before a bottle feed can be marked done
+	const total = Math.round((breastMilkOz + formulaOz) * 100) / 100;
+	if (!content || total <= 0) return; // an amount is required before a bottle feed can be marked done
 	const now = new Date().toISOString();
+	const fields = {
+		bottle_content: content,
+		breast_milk_oz: breastMilkOz,
+		formula_oz: formulaOz,
+		amount_oz: total,
+		end_time: now
+	};
 	if (active.bottle_running_since) {
 		const elapsedSec = Math.round((new Date(now) - new Date(active.bottle_running_since)) / 1000);
-		await updateEntry(active.id, {
-			bottle_elapsed_seconds: (active.bottle_elapsed_seconds || 0) + elapsedSec,
-			bottle_running_since: null,
-			end_time: now,
-			amount_oz: amountOz
-		});
-	} else {
-		await updateEntry(active.id, { end_time: now, amount_oz: amountOz });
+		fields.bottle_elapsed_seconds = (active.bottle_elapsed_seconds || 0) + elapsedSec;
+		fields.bottle_running_since = null;
 	}
+	await updateEntry(active.id, fields);
 	await refresh();
 	syncNow();
+}
+
+// Ounces of each milk type for the chosen bottle contents (inputs are strings)
+export function bottleAmounts(content, breastMilkStr, formulaStr) {
+	return {
+		breastMilkOz: content === 'formula' ? 0 : parseFloat(breastMilkStr) || 0,
+		formulaOz: content === 'breast_milk' ? 0 : parseFloat(formulaStr) || 0
+	};
+}
+
+export function bottleInputsValid(content, breastMilkStr, formulaStr) {
+	const { breastMilkOz, formulaOz } = bottleAmounts(content, breastMilkStr, formulaStr);
+	if (content === 'breast_milk') return breastMilkOz > 0;
+	if (content === 'formula') return formulaOz > 0;
+	return breastMilkOz > 0 && formulaOz > 0; // combo needs both
 }
 
 // Most recent side used across all breast-feeding entries (including the
